@@ -1,6 +1,38 @@
+#!/usr/bin/env python
 import sys
+import os
 import argparse
 import json
+
+
+def build_arg_parser():
+    """
+    Builds an argument parser
+
+    -f filename
+    -c csv_format
+    -s summary
+
+    """
+    parser = argparse.ArgumentParser(
+        description='Arguments ')
+
+    parser.add_argument('-f', '--filename',
+                        required=True,
+                        action='store',
+                        help='input file containing LPAR VGs and disks information in csv format')
+
+    parser.add_argument('-c', '--csv',
+                        required=False,
+                        action='store_true',
+                        help='output result onto csv format')
+
+    parser.add_argument('-s', '--summary',
+                        required=False,
+                        action='store_true',
+                        help='print summary')
+
+    return parser
 
 
 def clean_line(line):
@@ -111,43 +143,44 @@ def sum_up_dict(lpar_dict):
     return lpar_dict
 
 
-def summary(lpar_dict):
+def summary(lpar_dict, csv=False):
     """Print a summary for all lpars"""
 
     # get high level information for all lpars
-    n_lpars = lpar_dict.get('n_lpars')
-    total_vgs = lpar_dict.get('n_vgs')
-    total_disks = lpar_dict.get('n_disks')
-    total_size = lpar_dict.get('t_size')
-    message = ''
+    n_lpars = str(lpar_dict.get('n_lpars'))
+    total_vgs = str(lpar_dict.get('n_vgs'))
+    total_disks = str(lpar_dict.get('n_disks'))
+    total_size = str(lpar_dict.get('t_size'))
 
     # build the print message
-    message += (
-        '{0}{5}{0}'
-        'Number of LPARS: {1}{0}'
-        'Total number of VGs: {2}{0}'
-        'Total number of disks: {3}{0}'
-        'Total capacity: {4} MB{0}'
-    ).format('\n', n_lpars, total_vgs, total_disks, total_size, '-'*20)
+    if csv:
+        message = 'filename,g_lpars,total_vgs,total_disks,total_size\n'
+        message += (','.join([filename, n_lpars, total_vgs, total_disks, total_size]))
+    else:
+        message = (
+            '{0}{5}{0}'
+            'File name: {6}{0}'
+            'Number of LPARS: {1}{0}'
+            'Total number of VGs: {2}{0}'
+            'Total number of disks: {3}{0}'
+            'Total capacity: {4} MB{0}'
+        ).format('\n', n_lpars, total_vgs, total_disks, total_size, '-'*20, filename)
 
     print(message)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filename", 
-        help="input file containing LPAR VGs and disks information in csv format"
-    )
-
+    parser = build_arg_parser()
     args = parser.parse_args()
-    if args.filename:
-        filename = args.filename
 
+    filename = args.filename
+
+    if os.path.isfile(args.filename):
         with open(filename) as fd:
             f_content = fd.read()
 
-        
+    if args.summary:
         lpar_dict = build_dict(f_content)
         lpar_dict = sum_up_dict(lpar_dict)
-        summary(lpar_dict)
+        summary(lpar_dict, args.csv)
 
