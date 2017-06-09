@@ -28,7 +28,8 @@ lspv | while read disk pvid vg active; do
         serial=$(lscfg -vpl $disk | grep 'Serial Number'|sed 's/.*\.//')
     fi
     size=$(bootinfo -s $disk)
+    unique_id=$(odmget -q "name=${disk} AND attribute=unique_id" CuAt)
 
     # output to file
-    echo "$SERVER,$disk,$pvid,$serial,$size,$vg" | tee -a $LOGFILE
+    echo "$SERVER,$disk,$pvid,$serial,$size,$vg,$unique_id" | tee -a $LOGFILE
 done
