@@ -18,6 +18,9 @@ SERVER=$(uname -n)
 DATE="$(date +%Y%m%d_%H%M%S)"
 
 LOGFILE="${SERVER}_${DATE}.csv"
+VGLOGFILE="${SERVER}_${DATE}_vg.log"
+LVLOGFILE="${SERVER}_${DATE}_lv.log"
+PVLOGFILE="${SERVER}_${DATE}_pv.log"
 
 lspv | while read disk pvid vg active; do
     # verify if the disk is a hdiskpower device
@@ -28,8 +31,13 @@ lspv | while read disk pvid vg active; do
         serial=$(lscfg -vpl $disk | grep 'Serial Number'|sed 's/.*\.//')
     fi
     size=$(bootinfo -s $disk)
-    unique_id=$(odmget -q "name=${disk} AND attribute=unique_id" CuAt)
+    unique_id=$(odmget -q "name=${disk} AND attribute=unique_id" CuAt |grep 'value' |sed 's/.* //' )
 
     # output to file
     echo "$SERVER,$disk,$pvid,$serial,$size,$vg,$unique_id" | tee -a $LOGFILE
 done
+
+# collect VG, LVOL and PV information
+lsvg |xargs lsvg | tee -a ${VGLOGFILE}
+lsvg |xargs lsvg -l | tee -a ${LVLOGFILE}
+lsvg |xargs lsvg -p | tee -a ${PVLOGFILE}
