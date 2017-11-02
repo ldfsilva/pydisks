@@ -30,7 +30,7 @@ lspv | while read disk pvid vg active; do
     else
         serial=$(lscfg -vpl $disk | grep 'Serial Number'|sed 's/.*\.//')
     fi
-    size=$(bootinfo -s $disk)
+    size=$(getconf DISK_SIZE /dev/$disk)
     unique_id=$(odmget -q "name=${disk} AND attribute=unique_id" CuAt |grep 'value' |sed 's/.* //' )
 
     # output to file
