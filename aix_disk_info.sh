@@ -22,7 +22,12 @@ VGLOGFILE="${SERVER}_${DATE}_vg.log"
 LVLOGFILE="${SERVER}_${DATE}_lv.log"
 PVLOGFILE="${SERVER}_${DATE}_pv.log"
 
-lspv | while read disk pvid vg active; do
+LSPV=$(lspv)
+hdisks=$(echo "$LSPV"|sed 's/ .*//'|tr -s "\n" " ") # list of PVs split by spaces (" ")
+
+# use for loop since using read in while loop or pipe(|) redirection will cause stty error in lscfg command
+# ERROR: stty: tcgetattr: A specified file does not support the ioctl system call.
+for disk in $hdisks; do
     # verify if the disk is a hdiskpower device
     echo $disk | grep -q power && is_hdisk_power=1 || is_hdisk_power=0
     if [ $is_hdisk_power -eq 1 ]; then
@@ -32,6 +37,10 @@ lspv | while read disk pvid vg active; do
     fi
     size=$(getconf DISK_SIZE /dev/$disk)
     unique_id=$(odmget -q "name=${disk} AND attribute=unique_id" CuAt |grep 'value' |sed 's/.* //' )
+
+    # query the disk data out of pre-stored variable
+    pvid=$(echo "$LSPV"| awk "/$disk[ |\t]/ {print \$2}")
+    vg=$(echo "$LSPV"| awk "/$disk[ |\t]/ {print \$3}")
 
     # output to file
     echo "$SERVER,$disk,$pvid,$serial,$size,$vg,$unique_id" | tee -a $LOGFILE
